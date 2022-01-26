@@ -55,7 +55,7 @@ impl<T: Timer> DeadlineExecutor<T> {
 
     pub fn spawn(&mut self, task: Task) {
         let task_id = task.id;
-        let deadline = task.deadline;
+        let deadline = self.timer.now() + task.deadline;
         if self.tasks.insert(task.id, task).is_some() {
             panic!("A task with the same ID already exists.");
         }
@@ -73,28 +73,28 @@ impl<T: Timer> DeadlineExecutor<T> {
             timer,
         } = self;
 
-        while let Some((task_id, deadline)) = task_queue.pop() {
+        while let Some((task_id, _)) = task_queue.pop() {
             let task = match tasks.get_mut(&task_id) {
                 Some(task) => task,
                 None => continue,
             };
             let waker = waker_cache
                 .entry(task_id)
-                .or_insert_with(|| TaskWaker::new(task_id, deadline, task_queue.clone()));
+                .or_insert_with(|| TaskWaker::new(task_id, task.deadline, task_queue.clone()));
             let mut context = Context::from_waker(waker);
-            let start = timer.now();
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
                     tasks.remove(&task_id);
                     waker_cache.remove(&task_id);
                 }
                 Poll::Pending => {
-                    let duration = timer.elapsed_since(start);
+                    let now = timer.now();
+                    println!("Now: {} Deadline: {}", now, task.deadline);
 
-                    if deadline == 0 {
+                    if task.deadline <= now {
                         return Err(ExecutorError::MissedDeadline(task_id.0));
                     }
-                    task_queue.push(task_id, deadline - duration);
+                    task_queue.push(task_id, task.deadline - now);
                 }
             }
         }
