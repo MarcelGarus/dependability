@@ -1,6 +1,4 @@
-# dependability
-
-A library for making your programs more reliable
+# Dependability: A library for making your programs more reliable
 
 Especially when dealing with hardware, a lot can go wrong. Here are some of the biggest problems that can arise in code and what you can do about them:
 
