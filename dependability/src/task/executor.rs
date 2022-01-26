@@ -63,32 +63,23 @@ impl<T: Timer> DeadlineExecutor<T> {
     }
 
     fn run_ready_tasks(&mut self) -> Result<(), ExecutorError> {
-        // use destructuring to avoid 'self' being borrowed by closure
-        // see: https://github.com/rust-lang/rust/issues/53488
-        let Self {
-            tasks,
-            task_queue,
-            waker_cache,
-
-            timer,
-        } = self;
-
-        while let Some((task_id, _)) = task_queue.pop() {
-            let task = match tasks.get_mut(&task_id) {
+        while let Some((task_id, _)) = self.task_queue.pop() {
+            let task = match self.tasks.get_mut(&task_id) {
                 Some(task) => task,
                 None => continue,
             };
-            let waker = waker_cache
+            let waker = self
+                .waker_cache
                 .entry(task_id)
-                .or_insert_with(|| TaskWaker::new(task_id, task.deadline, task_queue.clone()));
+                .or_insert_with(|| TaskWaker::new(task_id, task.deadline, self.task_queue.clone()));
             let mut context = Context::from_waker(waker);
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
-                    tasks.remove(&task_id);
-                    waker_cache.remove(&task_id);
+                    self.tasks.remove(&task_id);
+                    self.waker_cache.remove(&task_id);
                 }
                 Poll::Pending => {
-                    let now = timer.now();
+                    let now = self.timer.now();
                     println!("Now: {} Deadline: {}", now, task.deadline);
 
                     if task.deadline <= now {
@@ -97,14 +88,14 @@ impl<T: Timer> DeadlineExecutor<T> {
                                 return Err(ExecutorError::MissedDeadline(task_id.0))
                             }
                             BehaviorWhenDeadlineMissed::ContinueRunning => {
-                                task_queue.push(task_id, task.deadline - now);
+                                self.task_queue.push(task_id, task.deadline - now);
                             }
                             BehaviorWhenDeadlineMissed::InsteadApproximate(other_task) => {
                                 todo!("Spawn the other task instead.");
                             }
                         }
                     } else {
-                        task_queue.push(task_id, task.deadline - now);
+                        self.task_queue.push(task_id, task.deadline - now);
                     }
                 }
             }
