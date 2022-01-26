@@ -52,17 +52,9 @@ mod tests {
 
         executor.spawn(Task::new(7, async_task(5)));
 
-        // let stuff = spawn(123, {
-        // });
-
         // let result = finish_in(Duration::new(123), async || {
         //     ...
         // });
-        // match result {
-        //     Ok(value) => value,
-        //     Err(ExceededDeadline) => ...,
-        // }
-
         assert!(executor.run().is_ok());
     }
 

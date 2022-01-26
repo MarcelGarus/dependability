@@ -1,5 +1,6 @@
 use super::Task;
 use crate::priority_queue::PriorityQueue;
+use crate::task::BehaviorWhenDeadlineMissed;
 use crate::{task::TaskId, time::Timestamp};
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
@@ -19,7 +20,6 @@ pub struct DeadlineExecutor<T: Timer> {
     tasks: BTreeMap<TaskId, Task>,
     task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
     waker_cache: BTreeMap<TaskId, Waker>,
-
     timer: T,
 }
 
@@ -92,9 +92,20 @@ impl<T: Timer> DeadlineExecutor<T> {
                     println!("Now: {} Deadline: {}", now, task.deadline);
 
                     if task.deadline <= now {
-                        return Err(ExecutorError::MissedDeadline(task_id.0));
+                        match &task.behavior {
+                            BehaviorWhenDeadlineMissed::ReturnError => {
+                                return Err(ExecutorError::MissedDeadline(task_id.0))
+                            }
+                            BehaviorWhenDeadlineMissed::ContinueRunning => {
+                                task_queue.push(task_id, task.deadline - now);
+                            }
+                            BehaviorWhenDeadlineMissed::InsteadApproximate(other_task) => {
+                                todo!("Spawn the other task instead.");
+                            }
+                        }
+                    } else {
+                        task_queue.push(task_id, task.deadline - now);
                     }
-                    task_queue.push(task_id, task.deadline - now);
                 }
             }
         }
