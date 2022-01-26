@@ -1,6 +1,6 @@
 use super::Task;
 use crate::priority_queue::PriorityQueue;
-use crate::task::BehaviorWhenDeadlineMissed;
+use crate::task::DeadlineMissBehavior;
 use crate::{task::TaskId, time::Timestamp};
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
@@ -73,6 +73,7 @@ impl<T: Timer> Executor<T> {
                 .entry(task_id)
                 .or_insert_with(|| TaskWaker::new(task_id, task.deadline, self.task_queue.clone()));
             let mut context = Context::from_waker(waker);
+            println!("Polling task {:?}", task.id);
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
                     self.tasks.remove(&task_id);
@@ -84,13 +85,13 @@ impl<T: Timer> Executor<T> {
 
                     if task.deadline <= now {
                         match &task.behavior {
-                            BehaviorWhenDeadlineMissed::ReturnError => {
+                            DeadlineMissBehavior::ReturnError => {
                                 return Err(ExecutorError::MissedDeadline(task_id.0))
                             }
-                            BehaviorWhenDeadlineMissed::ContinueRunning => {
+                            DeadlineMissBehavior::ContinueRunning => {
                                 self.task_queue.push(task_id, task.deadline - now);
                             }
-                            BehaviorWhenDeadlineMissed::InsteadApproximate(other_task) => {
+                            DeadlineMissBehavior::InsteadApproximate(other_task) => {
                                 todo!("Spawn the other task instead.");
                             }
                         }

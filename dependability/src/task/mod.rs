@@ -23,10 +23,10 @@ impl TaskId {
 pub struct Task {
     id: TaskId,
     deadline: Timestamp,
-    behavior: BehaviorWhenDeadlineMissed,
+    behavior: DeadlineMissBehavior,
     future: Pin<Box<dyn Future<Output = ()>>>,
 }
-pub enum BehaviorWhenDeadlineMissed {
+pub enum DeadlineMissBehavior {
     ReturnError,
     ContinueRunning,
     InsteadApproximate(Box<Task>),
@@ -35,13 +35,13 @@ pub enum BehaviorWhenDeadlineMissed {
 impl Task {
     pub fn new(
         deadline: Timestamp,
-        behavior: BehaviorWhenDeadlineMissed,
+        behavior: DeadlineMissBehavior,
         future: impl Future<Output = ()> + 'static,
     ) -> Task {
         Task {
             id: TaskId::new(),
             deadline,
-            behavior: BehaviorWhenDeadlineMissed::ReturnError,
+            behavior,
             future: Box::pin(future),
         }
     }
