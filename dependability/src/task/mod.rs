@@ -33,7 +33,11 @@ pub enum BehaviorWhenDeadlineMissed {
 }
 
 impl Task {
-    pub fn new(deadline: Timestamp, future: impl Future<Output = ()> + 'static) -> Task {
+    pub fn new(
+        deadline: Timestamp,
+        behavior: BehaviorWhenDeadlineMissed,
+        future: impl Future<Output = ()> + 'static,
+    ) -> Task {
         Task {
             id: TaskId::new(),
             deadline,

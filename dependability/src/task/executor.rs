@@ -16,7 +16,7 @@ pub enum ExecutorError {
     MissedDeadline(u64),
 }
 
-pub struct DeadlineExecutor<T: Timer> {
+pub struct Executor<T: Timer> {
     tasks: BTreeMap<TaskId, Task>,
     task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
     waker_cache: BTreeMap<TaskId, Waker>,
@@ -24,7 +24,7 @@ pub struct DeadlineExecutor<T: Timer> {
 }
 
 #[cfg(feature = "std")]
-impl Default for DeadlineExecutor<StdTimer> {
+impl Default for Executor<StdTimer> {
     fn default() -> Self {
         Self {
             tasks: Default::default(),
@@ -36,15 +36,15 @@ impl Default for DeadlineExecutor<StdTimer> {
 }
 
 #[cfg(feature = "std")]
-impl DeadlineExecutor<StdTimer> {
-    pub fn new() -> DeadlineExecutor<StdTimer> {
+impl Executor<StdTimer> {
+    pub fn new() -> Executor<StdTimer> {
         Default::default()
     }
 }
 
-impl<T: Timer> DeadlineExecutor<T> {
+impl<T: Timer> Executor<T> {
     #[cfg(not(feature = "std"))]
-    pub fn new(timer: T) -> DeadlineExecutor<T> {
+    pub fn new(timer: T) -> Executor<T> {
         Self {
             tasks: BTreeMap::new(),
             task_queue: Arc::new(PriorityQueue::new()),
