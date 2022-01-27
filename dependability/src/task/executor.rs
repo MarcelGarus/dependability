@@ -1,6 +1,6 @@
 use super::Task;
 use crate::priority_queue::PriorityQueue;
-use crate::task::DeadlineMissBehavior;
+use crate::task::DelayStrategy;
 use crate::{task::TaskId, time::Timestamp};
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
@@ -85,14 +85,16 @@ impl<T: Timer> Executor<T> {
 
                     if task.deadline <= now {
                         match &task.behavior {
-                            DeadlineMissBehavior::ReturnError => {
+                            DelayStrategy::ReturnError => {
                                 return Err(ExecutorError::MissedDeadline(task_id.0))
                             }
-                            DeadlineMissBehavior::Panic => panic!("We missed the deadline of a task with a DeadlineMissBehavior of panic."),
-                            DeadlineMissBehavior::ContinueRunning => {
+                            DelayStrategy::Panic => panic!(
+                                "We missed the deadline of a task with a DelayStrategy of panic."
+                            ),
+                            DelayStrategy::ContinueRunning => {
                                 self.task_queue.push(task_id, task.deadline - now);
                             }
-                            DeadlineMissBehavior::InsteadApproximate(_other_task) => {
+                            DelayStrategy::InsteadApproximate(_other_task) => {
                                 todo!("Spawn the other task instead.");
                             }
                         }

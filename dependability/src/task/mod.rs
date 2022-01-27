@@ -23,10 +23,10 @@ impl TaskId {
 pub struct Task {
     id: TaskId,
     deadline: Timestamp,
-    behavior: DeadlineMissBehavior,
+    behavior: DelayStrategy,
     future: Pin<Box<dyn Future<Output = ()>>>,
 }
-pub enum DeadlineMissBehavior {
+pub enum DelayStrategy {
     ReturnError,
     Panic,
     ContinueRunning,
@@ -36,7 +36,7 @@ pub enum DeadlineMissBehavior {
 impl Task {
     pub fn new(
         deadline: Timestamp,
-        behavior: DeadlineMissBehavior,
+        behavior: DelayStrategy,
         future: impl Future<Output = ()> + 'static,
     ) -> Task {
         Task {

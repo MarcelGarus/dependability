@@ -20,7 +20,7 @@ extern crate std;
 macro_rules! spawn {
     ($(($deadline:expr, $task:expr)),+) => {{
         let mut executor = crate::task::executor::Executor::new();
-        $(executor.spawn(Task::new($deadline, crate::task::DeadlineMissBehavior::ReturnError, $task)));+;
+        $(executor.spawn(Task::new($deadline, crate::task::DelayStrategy::ReturnError, $task)));+;
         executor.run()
     }};
 }
@@ -30,7 +30,7 @@ mod tests {
     extern crate std;
     use crate::{
         noop,
-        task::{executor::Executor, DeadlineMissBehavior, Task},
+        task::{executor::Executor, DelayStrategy, Task},
     };
     use std::println;
 
@@ -50,36 +50,12 @@ mod tests {
     fn test_async_await() {
         let mut executor = Executor::new();
 
-        executor.spawn(Task::new(
-            10,
-            DeadlineMissBehavior::ReturnError,
-            async_task(1),
-        ));
-        executor.spawn(Task::new(
-            5,
-            DeadlineMissBehavior::ReturnError,
-            async_task(2),
-        ));
-        executor.spawn(Task::new(
-            9,
-            DeadlineMissBehavior::ReturnError,
-            async_task(3),
-        ));
-        executor.spawn(Task::new(
-            2,
-            DeadlineMissBehavior::ReturnError,
-            async_task(4),
-        ));
-        executor.spawn(Task::new(
-            7,
-            DeadlineMissBehavior::ReturnError,
-            async_task(5),
-        ));
-        executor.spawn(Task::new(
-            7,
-            DeadlineMissBehavior::ReturnError,
-            async_task(5),
-        ));
+        executor.spawn(Task::new(10, DelayStrategy::ReturnError, async_task(1)));
+        executor.spawn(Task::new(5, DelayStrategy::ReturnError, async_task(2)));
+        executor.spawn(Task::new(9, DelayStrategy::ReturnError, async_task(3)));
+        executor.spawn(Task::new(2, DelayStrategy::ReturnError, async_task(4)));
+        executor.spawn(Task::new(7, DelayStrategy::ReturnError, async_task(5)));
+        executor.spawn(Task::new(7, DelayStrategy::ReturnError, async_task(5)));
 
         // let result = finish_in(Duration::new(123), async || {
         //     ...
@@ -118,19 +94,11 @@ mod tests {
     #[test]
     fn test_continue_running_behavior() {
         let mut executor = Executor::new();
-        executor.spawn(Task::new(
-            1,
-            DeadlineMissBehavior::ReturnError,
-            long_task(10),
-        ));
+        executor.spawn(Task::new(1, DelayStrategy::ReturnError, long_task(10)));
         assert!(executor.run().is_err());
 
         let mut executor = Executor::new();
-        executor.spawn(Task::new(
-            1,
-            DeadlineMissBehavior::ContinueRunning,
-            long_task(3),
-        ));
+        executor.spawn(Task::new(1, DelayStrategy::ContinueRunning, long_task(3)));
         assert!(executor.run().is_ok());
     }
 }
