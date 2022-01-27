@@ -92,14 +92,14 @@ impl<T: Timer> Executor<T> {
                                 "We missed the deadline of a task with a DelayStrategy of panic."
                             ),
                             DelayStrategy::ContinueRunning => {
-                                self.task_queue.push(task_id, task.deadline - now);
+                                self.task_queue.push(task_id, now - task.deadline);
                             }
                             DelayStrategy::InsteadApproximate(_other_task) => {
                                 todo!("Spawn the other task instead.");
                             }
                         }
                     } else {
-                        self.task_queue.push(task_id, task.deadline - now);
+                        self.task_queue.push(task_id, 0);
                     }
                 }
             }
