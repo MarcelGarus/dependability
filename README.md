@@ -19,6 +19,7 @@ TODO
 
 ## Todos
 
+- [ ] provide waiting future
 - [ ] add (optional) expected execution times to tasks
 - [ ] add priorities for scheduler
 - [ ] add fallback functions (service levels that are automatically chosen based on time pressure)

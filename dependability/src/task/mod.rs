@@ -28,6 +28,7 @@ pub struct Task {
 }
 pub enum DeadlineMissBehavior {
     ReturnError,
+    Panic,
     ContinueRunning,
     InsteadApproximate(Box<Task>),
 }

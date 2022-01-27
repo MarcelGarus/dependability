@@ -88,10 +88,11 @@ impl<T: Timer> Executor<T> {
                             DeadlineMissBehavior::ReturnError => {
                                 return Err(ExecutorError::MissedDeadline(task_id.0))
                             }
+                            DeadlineMissBehavior::Panic => panic!("We missed the deadline of a task with a DeadlineMissBehavior of panic."),
                             DeadlineMissBehavior::ContinueRunning => {
                                 self.task_queue.push(task_id, task.deadline - now);
                             }
-                            DeadlineMissBehavior::InsteadApproximate(other_task) => {
+                            DeadlineMissBehavior::InsteadApproximate(_other_task) => {
                                 todo!("Spawn the other task instead.");
                             }
                         }
