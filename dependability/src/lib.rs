@@ -1,16 +1,8 @@
-#![feature(bench_black_box)]
-
-use futures_util::Future;
-
 extern crate alloc;
 
 pub mod priority_queue;
 pub mod task;
 pub mod time;
-
-pub fn noop() -> impl Future<Output = ()> {
-    std::future::ready(())
-}
 
 #[cfg(feature = "std")]
 extern crate std;
@@ -29,8 +21,8 @@ macro_rules! spawn {
 mod tests {
     extern crate std;
     use crate::{
-        noop,
-        task::{executor::Executor, DelayStrategy, Task},
+        task::{executor::Executor, noop, sleep, DelayStrategy, Task},
+        time::{StdTimer, Timer},
     };
     use std::println;
 
@@ -41,7 +33,7 @@ mod tests {
     async fn async_task(number: u8) {
         println!("Hi {}!", number);
         let number = async_number().await;
-        noop().await;
+        noop::noop().await;
         assert_eq!(number, 42)
     }
 
@@ -49,13 +41,38 @@ mod tests {
     #[test]
     fn test_async_await() {
         let mut executor = Executor::new();
+        let now = StdTimer.now();
 
-        executor.spawn(Task::new(10, DelayStrategy::ReturnError, async_task(1)));
-        executor.spawn(Task::new(5, DelayStrategy::ReturnError, async_task(2)));
-        executor.spawn(Task::new(9, DelayStrategy::ReturnError, async_task(3)));
-        executor.spawn(Task::new(2, DelayStrategy::ReturnError, async_task(4)));
-        executor.spawn(Task::new(7, DelayStrategy::ReturnError, async_task(5)));
-        executor.spawn(Task::new(7, DelayStrategy::ReturnError, async_task(5)));
+        executor.spawn(Task::new(
+            now + 10,
+            DelayStrategy::ReturnError,
+            async_task(1),
+        ));
+        executor.spawn(Task::new(
+            now + 5,
+            DelayStrategy::ReturnError,
+            async_task(2),
+        ));
+        executor.spawn(Task::new(
+            now + 9,
+            DelayStrategy::ReturnError,
+            async_task(3),
+        ));
+        executor.spawn(Task::new(
+            now + 2,
+            DelayStrategy::ReturnError,
+            async_task(4),
+        ));
+        executor.spawn(Task::new(
+            now + 7,
+            DelayStrategy::ReturnError,
+            async_task(5),
+        ));
+        executor.spawn(Task::new(
+            now + 7,
+            DelayStrategy::ReturnError,
+            async_task(5),
+        ));
 
         // let result = finish_in(Duration::new(123), async || {
         //     ...
@@ -66,7 +83,8 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_macro() {
-        assert!(spawn!((4, async_task(1)), (2, async_task(2))).is_ok());
+        let now = StdTimer.now();
+        assert!(spawn!((now + 4, async_task(1)), (now + 2, async_task(2))).is_ok());
     }
 
     async fn pending_task(number: u8) {
@@ -78,15 +96,14 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_missing_deadline() {
-        assert!(spawn!((2, pending_task(1))).is_err());
+        assert!(spawn!((StdTimer.now() + 2, pending_task(1))).is_err());
     }
 
     async fn long_task(mut seconds: u8) {
         println!("Long task taking {} seconds", seconds);
         while seconds > 0 {
-            std::thread::sleep(std::time::Duration::new(1, 0));
-            noop().await;
-            seconds -= std::hint::black_box(1);
+            sleep::sleep(StdTimer, std::time::Duration::new(1, 0)).await;
+            seconds -= 1;
         }
     }
 

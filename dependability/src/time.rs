@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-/// A imestamp in seconds.
+/// A timestamp in seconds.
 pub type Timestamp = u64;
 
 /// A timer to be implemented for different platforms
