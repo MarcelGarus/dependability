@@ -19,7 +19,6 @@ TODO
 
 ## Todos
 
-- [ ] make behavior for missed deadlines configurable per task
 - [ ] add (optional) expected execution times to tasks
 - [ ] add priorities for scheduler
 - [ ] add fallback functions (service levels that are automatically chosen based on time pressure)
@@ -31,7 +30,7 @@ TODO
 ## Benchmarking todos
 
 Measure:
-s
+
 - reliability (for failures that just happen naturally and intentionally introduced failures)
 - performance overhead of using this library
 
