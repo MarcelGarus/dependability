@@ -1,4 +1,4 @@
-use retry::retry;
+use dependability_retry_proc_macro::retry;
 
 // Our connection isn't great, so connect() will always fail
 fn connect(_host: &'static str, _port: u16) -> Option<&[u8]> {

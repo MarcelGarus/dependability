@@ -73,7 +73,7 @@ impl<T: Timer> Executor<T> {
                 .entry(task_id)
                 .or_insert_with(|| TaskWaker::new(task_id, task.deadline, self.task_queue.clone()));
             let mut context = Context::from_waker(waker);
-            println!("Polling task {:?}", task.id);
+
             match task.poll(&mut context) {
                 Poll::Ready(()) => {
                     self.tasks.remove(&task_id);
@@ -81,7 +81,6 @@ impl<T: Timer> Executor<T> {
                 }
                 Poll::Pending => {
                     let now = self.timer.now();
-                    println!("Now: {} Deadline: {}", now, task.deadline);
 
                     if task.deadline <= now {
                         match &task.behavior {

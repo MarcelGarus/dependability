@@ -1,14 +1,20 @@
 [package]
 name = "dependability"
 version = "0.1.0"
-authors = ["Marcel Garus <marcel.garus@gmail.com>", "Clemens Tiedt <clemens.tiedt@student.hpi.de>"]
 edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 
-std = []
+default = ["runtime", "retry"]
+runtime = ["dependability-runtime"]
+retry = ["dependability-retry"]
 
-[dependencies]
-futures-util = { version = "0.3.13", default-features = false, features = ["alloc"] }
-conquer-once = { version = "0.3.2", default-features = false }
-crossbeam-queue = { version = "0.3.1", default-features = false, features = ["alloc"] }
+[dependencies.dependability-runtime]
+path = "../runtime"
+optional = true
+
+[dependencies.dependability-retry]
+path = "../retry"
+optional = true

@@ -1,104 +1,52 @@
-use proc_macro::TokenStream;
-use quote::{format_ident, quote};
-use syn::{FnArg, PathArguments, ReturnType};
+#![no_std]
 
-/// Takes the return type (a result) and replaces the error type with &str
-fn replace_return_type(r: &ReturnType) -> Result<ReturnType, &'static str> {
-    if let syn::ReturnType::Type(_, t) = r {
-        if let syn::Type::Path(p) = t.as_ref() {
-            let p = &p.path;
-            let pairs = p.segments.pairs();
-            let last = &pairs.last().unwrap();
-            let value = &last.value();
-            let arguments = &value.arguments;
-            if let PathArguments::AngleBracketed(generics) = arguments {
-                let ok_type = generics.args.first().unwrap();
-
-                return syn::parse::<ReturnType>(quote! {-> Result<#ok_type, &'static str>}.into())
-                    .map_err(|_| "Failed to generate return type");
-            }
-        }
-    }
-    Err("Could not replace return type")
+pub mod proc_macro {
+    pub use dependability_retry_proc_macro::retry;
 }
 
-/// Check if the return type of a function has the same name as `ty`.
-/// This function does not check e.g. generics, only the identifier
-fn returns_type(r: &ReturnType, ty: &str) -> bool {
-    if let syn::ReturnType::Type(_, t) = r {
-        if let syn::Type::Path(p) = t.as_ref() {
-            let p = &p.path;
-            let pairs = p.segments.pairs();
-            let last = &pairs.last().unwrap();
-            let value = &last.value();
-            return &value.ident.to_string() == ty;
+#[derive(Debug, PartialEq)]
+pub struct RetryError;
+
+#[macro_export]
+macro_rules! retry {
+    ($fn_call:expr, $retries:tt) => {{
+        let mut tries = 0;
+        loop {
+            match ($fn_call) {
+                Ok(v) => break Ok(v),
+                Err(_) => {
+                    if tries < $retries {
+                        tries += 1;
+                    } else {
+                        break Err(RetryError);
+                    }
+                }
+            }
         }
-    }
-    false
+    }};
 }
 
-/// Retry the function this macro is attached to if it fails
-#[proc_macro_attribute]
-pub fn retry(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input: syn::ItemFn = syn::parse(item).unwrap();
-    let retries: syn::Expr = syn::parse(attr).expect("Failed to parse number of retries");
+#[cfg(test)]
+mod tests {
+    use core::convert::Infallible;
 
-    // Get the function signature and replace the error type with a &str
-    let mut sig = input.sig.clone();
-    let rt = replace_return_type(&sig.output).unwrap();
-    sig.output = rt;
+    use crate::RetryError;
 
-    // Extract the names of the arguments in order
-    let fn_args = sig.inputs.clone().into_pairs().filter_map(|p| {
-        if let FnArg::Typed(pt) = p.into_value() {
-            Some(pt.pat)
-        } else {
-            None
-        }
-    });
+    fn f() -> Result<i32, Infallible> {
+        Ok(42)
+    }
 
-    // the original function needs to be renamed
-    let mut original_fun = input.clone();
-    original_fun.sig.ident = format_ident!("_{}", sig.ident);
-    let original_fun_ident = original_fun.sig.ident.clone();
+    fn g() -> Result<i32, &'static str> {
+        Err("nope")
+    }
 
-    if returns_type(&original_fun.sig.output, "Result") {
-        let tokens = quote! {
-            #original_fun
+    #[test]
+    fn succeeds() {
+        assert_eq!(retry!(f(), 3), Ok(42));
+    }
 
-            #sig {
-                let mut tries = 0;
-                while tries <= #retries {
-                    if let Ok(v) = #original_fun_ident(#(#fn_args),*) {
-                        return Ok(v);
-                    }
-
-                    tries += 1;
-                }
-
-                return Err("Exceeded number of tries")
-            }
-        };
-        tokens.into()
-    } else if returns_type(&original_fun.sig.output, "Option") {
-        let tokens = quote! {
-            #original_fun
-
-            #sig {
-                let mut tries = 0;
-                while tries <= #retries {
-                    if let Some(v) = #original_fun_ident(#(#fn_args),*) {
-                        return Ok(v);
-                    }
-
-                    tries += 1;
-                }
-
-                return Err("Exceeded number of tries")
-            }
-        };
-        tokens.into()
-    } else {
-        panic!("retry is only applicable to functions returning Result or Option")
+    #[test]
+    fn fails() {
+        assert_eq!(retry!(g(), 3), Err(RetryError));
     }
 }

@@ -1,4 +1,4 @@
-use retry::retry;
+use dependability_retry_proc_macro::retry;
 
 static mut X: u32 = 0;
 

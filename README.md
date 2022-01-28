@@ -15,7 +15,23 @@ Especially when dealing with hardware, a lot can go wrong. Here are some of the 
 
 ## Usage
 
-TODO
+This project exposes four crates in total.
+
+### dependability
+
+In most cases, you want to use this crate. It has the features `retry` and `runtime`
+which can be enabled to re-export the respective crates.
+
+### retry and retry_proc_macro
+
+These crates are used to retry fallible operations. The `retry!` macro can be used
+to retry expressions, the `#[retry]` proc macro will automatically retry the annotated
+function. `retry` re-exports `retry_proc_macro`.
+
+### runtime
+
+This is an async runtime that respects deadlines. It works on embedded systems and
+behavior upon exceeding a deadline can be configured.
 
 ## Todos
 

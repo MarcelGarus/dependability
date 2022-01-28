@@ -1,0 +1,14 @@
+[package]
+name = "dependability-runtime"
+version = "0.1.0"
+authors = ["Marcel Garus <marcel.garus@gmail.com>", "Clemens Tiedt <clemens.tiedt@student.hpi.de>"]
+edition = "2021"
+
+[features]
+
+std = []
+
+[dependencies]
+futures-util = { version = "0.3.13", default-features = false, features = ["alloc"] }
+conquer-once = { version = "0.3.2", default-features = false }
+crossbeam-queue = { version = "0.3.1", default-features = false, features = ["alloc"] }
