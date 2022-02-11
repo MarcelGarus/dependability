@@ -18,12 +18,12 @@ impl<I, P: Ord + Copy> PriorityQueue<I, P> {
     }
     pub fn pop(&self) -> Option<(I, P)> {
         unsafe {
-            let minimum = (*self.items.get()).iter().map(|(_, p)| p).min()?;
-            let index = (*self.items.get())
+            let (index, (_, _)) = (*self.items.get())
                 .iter()
-                .position(|(_, p)| p == minimum)
-                .unwrap();
-            Some((*self.items.get()).remove(index))
+                .enumerate()
+                .min_by_key(|(_, (_, p))| p)?;
+
+            Some((*self.items.get()).swap_remove(index))
         }
     }
     pub fn is_empty(&self) -> bool {

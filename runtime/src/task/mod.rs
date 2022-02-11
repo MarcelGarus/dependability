@@ -36,7 +36,7 @@ pub enum DelayStrategy {
     ReturnError,
     Panic,
     ContinueRunning,
-    InsteadApproximate(Box<Task>),
+    InsteadApproximate(Box<dyn Fn() -> Task>),
 }
 
 impl Task {

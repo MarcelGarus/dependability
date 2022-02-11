@@ -81,7 +81,6 @@ impl<T: Timer> Executor<T> {
                 }
                 Poll::Pending => {
                     let now = self.timer.now();
-
                     if task.deadline <= now {
                         match &task.behavior {
                             DelayStrategy::ReturnError => {
@@ -93,8 +92,9 @@ impl<T: Timer> Executor<T> {
                             DelayStrategy::ContinueRunning => {
                                 self.task_queue.push(task_id, now - task.deadline);
                             }
-                            DelayStrategy::InsteadApproximate(_other_task) => {
-                                todo!("Spawn the other task instead.");
+                            DelayStrategy::InsteadApproximate(create_other_task) => {
+                                let other_task = create_other_task();
+                                self.spawn(other_task);
                             }
                         }
                     } else {

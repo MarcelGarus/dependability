@@ -7,9 +7,15 @@ edition = "2021"
 
 [features]
 
-default = ["runtime", "retry"]
+default = ["alloc", "runtime", "retry"]
+std = ["dependability-runtime/std"]
+alloc = ["dependability-alloc"]
 runtime = ["dependability-runtime"]
 retry = ["dependability-retry"]
+
+[dependencies.dependability-alloc]
+path = "../alloc"
+optional = true
 
 [dependencies.dependability-runtime]
 path = "../runtime"

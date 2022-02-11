@@ -168,4 +168,38 @@ mod tests {
         println!("{:?}", sink.get());
         assert_eq!(Some(9), sink.get());
     }
+
+    #[cfg(feature = "std")]
+    async fn subtask(id: usize) {
+        println!("Running subtask {}...", id);
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        std::future::pending::<()>().await;
+    }
+
+    #[cfg(feature = "std")]
+    async fn complex_task(id: usize) {
+        println!("Task {} here!", id);
+        for _ in 0..8 {
+            subtask(id).await;
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_state_machine() {
+        let mut executor = Executor::new();
+        let now = StdTimer.now();
+
+        executor.spawn(Task::new(
+            now + 5,
+            DelayStrategy::ReturnError,
+            complex_task(0),
+        ));
+        executor.spawn(Task::new(
+            now + 4,
+            DelayStrategy::ReturnError,
+            complex_task(1),
+        ));
+        executor.run().unwrap();
+    }
 }
