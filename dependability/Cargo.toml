@@ -7,11 +7,12 @@ edition = "2021"
 
 [features]
 
-default = ["alloc", "runtime", "retry"]
+default = ["alloc", "runtime", "retry", "partial-result"]
 std = ["dependability-runtime/std"]
 alloc = ["dependability-alloc"]
 runtime = ["dependability-runtime"]
 retry = ["dependability-retry"]
+partial-result = ["dependability-partial-result"]
 
 [dependencies.dependability-alloc]
 path = "../alloc"
@@ -23,4 +24,8 @@ optional = true
 
 [dependencies.dependability-retry]
 path = "../retry"
+optional = true
+
+[dependencies.dependability-partial-result]
+path = "../partial-result"
 optional = true

@@ -33,9 +33,22 @@ pub struct Task {
     future: Pin<Box<dyn Future<Output = ()>>>,
 }
 pub enum DelayStrategy {
+    /// Makes the executor's `run` function return an error.
     ReturnError,
+
+    /// Panics as soon as the deadline cannot be met.
     Panic,
+
+    /// Continues running this task even after the deadline passed. It then
+    /// continues running with a pretty high priority.
     ContinueRunning,
+
+    /// Doesn't continue running the tasks after the deadline, but also doesn't
+    /// report an error.
+    SilentlyAbort,
+
+    /// Stops running the task and instead approximates a result using the other
+    /// future.
     InsteadApproximate(Box<dyn Fn() -> Task>),
 }
 

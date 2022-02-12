@@ -92,6 +92,7 @@ impl<T: Timer> Executor<T> {
                             DelayStrategy::ContinueRunning => {
                                 self.task_queue.push(task_id, now - task.deadline);
                             }
+                            DelayStrategy::SilentlyAbort => {}
                             DelayStrategy::InsteadApproximate(create_other_task) => {
                                 let other_task = create_other_task();
                                 self.spawn(other_task);

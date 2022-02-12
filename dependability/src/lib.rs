@@ -10,6 +10,7 @@ pub use dependability_retry as retry;
 #[cfg(feature = "alloc")]
 pub use dependability_alloc as alloc;
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
     extern crate std;

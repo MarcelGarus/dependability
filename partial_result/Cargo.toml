@@ -1,0 +1,16 @@
+[package]
+name = "dependability-partial-result"
+version = "0.1.0"
+authors = ["Marcel Garus <marcel.garus@gmail.com>", "Clemens Tiedt <clemens.tiedt@student.hpi.de>"]
+edition = "2021"
+
+[features]
+
+default = ["std"]
+std = []
+
+[dependencies]
+futures-util = { version = "0.3.13", default-features = false, features = ["alloc"] }
+
+[dependencies.dependability-runtime]
+path = "../runtime"
