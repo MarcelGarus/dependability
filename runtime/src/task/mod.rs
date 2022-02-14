@@ -6,8 +6,9 @@ use core::{
     task::{Context, Poll},
 };
 
-use crate::time::Timestamp;
+use self::deadline::Deadline;
 
+pub mod deadline;
 pub mod executor;
 pub mod noop;
 pub mod sleep;
@@ -28,7 +29,7 @@ impl TaskId {
 
 pub struct Task {
     id: TaskId,
-    deadline: Timestamp,
+    deadline: Deadline,
     behavior: DelayStrategy,
     future: Pin<Box<dyn Future<Output = ()>>>,
 }
@@ -54,7 +55,7 @@ pub enum DelayStrategy {
 
 impl Task {
     pub fn new(
-        deadline: Timestamp,
+        deadline: Deadline,
         behavior: DelayStrategy,
         future: impl Future<Output = ()> + 'static,
     ) -> Task {

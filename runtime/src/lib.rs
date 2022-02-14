@@ -73,32 +73,32 @@ mod tests {
         let now = StdTimer.now();
 
         executor.spawn(Task::new(
-            now + 10,
+            (now + 10).into(),
             DelayStrategy::ReturnError,
             async_task(1),
         ));
         executor.spawn(Task::new(
-            now + 5,
+            (now + 5).into(),
             DelayStrategy::ReturnError,
             async_task(2),
         ));
         executor.spawn(Task::new(
-            now + 9,
+            (now + 9).into(),
             DelayStrategy::ReturnError,
             async_task(3),
         ));
         executor.spawn(Task::new(
-            now + 2,
+            (now + 2).into(),
             DelayStrategy::ReturnError,
             async_task(4),
         ));
         executor.spawn(Task::new(
-            now + 7,
+            (now + 7).into(),
             DelayStrategy::ReturnError,
             async_task(5),
         ));
         executor.spawn(Task::new(
-            now + 7,
+            (now + 7).into(),
             DelayStrategy::ReturnError,
             async_task(5),
         ));
@@ -113,7 +113,11 @@ mod tests {
     #[test]
     fn test_macro() {
         let now = StdTimer.now();
-        assert!(spawn!((now + 4, async_task(1)), (now + 2, async_task(2))).is_ok());
+        assert!(spawn!(
+            ((now + 4).into(), async_task(1)),
+            ((now + 2).into(), async_task(2))
+        )
+        .is_ok());
     }
 
     async fn pending_task(number: u8) {
@@ -125,7 +129,7 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_missing_deadline() {
-        assert!(spawn!((StdTimer.now() + 2, pending_task(1))).is_err());
+        assert!(spawn!(((StdTimer.now() + 2).into(), pending_task(1))).is_err());
     }
 
     async fn long_task(mut seconds: u8) {
@@ -140,11 +144,19 @@ mod tests {
     #[test]
     fn test_continue_running_behavior() {
         let mut executor = Executor::new();
-        executor.spawn(Task::new(1, DelayStrategy::ReturnError, long_task(10)));
+        executor.spawn(Task::new(
+            1.into(),
+            DelayStrategy::ReturnError,
+            long_task(10),
+        ));
         assert!(executor.run().is_err());
 
         let mut executor = Executor::new();
-        executor.spawn(Task::new(1, DelayStrategy::ContinueRunning, long_task(3)));
+        executor.spawn(Task::new(
+            1.into(),
+            DelayStrategy::ContinueRunning,
+            long_task(3),
+        ));
         assert!(executor.run().is_ok());
     }
 
@@ -160,7 +172,7 @@ mod tests {
         let mut executor = Executor::new();
         let sink = PartialSink::new();
         executor.spawn(Task::new(
-            3,
+            3.into(),
             DelayStrategy::ReturnError,
             partial(sink.clone()),
         ));
@@ -191,15 +203,40 @@ mod tests {
         let now = StdTimer.now();
 
         executor.spawn(Task::new(
-            now + 5,
+            (now + 5).into(),
             DelayStrategy::ReturnError,
             complex_task(0),
         ));
         executor.spawn(Task::new(
-            now + 4,
+            (now + 4).into(),
             DelayStrategy::ReturnError,
             complex_task(1),
         ));
         executor.run().unwrap();
+    }
+
+    #[cfg(feature = "std")]
+    async fn wait_task(t: u8, dur: u64) {
+        println!("Task {t} running");
+        std::thread::sleep(std::time::Duration::from_secs(dur));
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_continue_running_queue() {
+        let mut exec = Executor::new();
+
+        exec.spawn(Task::new(
+            3.into(),
+            DelayStrategy::ContinueRunning,
+            wait_task(0, 2),
+        ));
+        exec.spawn(Task::new(
+            4.into(),
+            DelayStrategy::ReturnError,
+            wait_task(1, 2),
+        ));
+
+        assert!(exec.run().is_ok())
     }
 }

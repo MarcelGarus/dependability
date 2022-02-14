@@ -42,7 +42,7 @@ mod tests {
         let now = StdTimer.now();
 
         executor.spawn(Task::new(
-            now + 16,
+            (now + 16).into(),
             DelayStrategy::ReturnError,
             complex_task(0),
         ));

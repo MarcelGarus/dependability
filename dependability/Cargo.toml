@@ -27,5 +27,5 @@ path = "../retry"
 optional = true
 
 [dependencies.dependability-partial-result]
-path = "../partial-result"
+path = "../partial_result"
 optional = true

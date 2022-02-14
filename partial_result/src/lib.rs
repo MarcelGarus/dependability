@@ -6,8 +6,8 @@ extern crate alloc;
 use alloc::rc::Rc;
 use core::cell::Cell;
 use dependability_runtime::{
-    task::{executor::Executor, DelayStrategy, Task},
-    time::{Timer, Timestamp},
+    task::{deadline::Deadline, executor::Executor, DelayStrategy, Task},
+    time::Timer,
 };
 use futures_util::Future;
 
@@ -40,7 +40,7 @@ pub fn partial_result_slot<T>() -> (PartialResultInput<T>, PartialResultOutput<T
 pub trait ExecutorExt {
     fn spawn_partial<R, F>(
         &mut self,
-        deadline: Timestamp,
+        deadline: Deadline,
         closure: fn(PartialResultInput<R>) -> F,
     ) -> PartialResultOutput<R>
     where
@@ -50,7 +50,7 @@ pub trait ExecutorExt {
 impl<T: Timer> ExecutorExt for Executor<T> {
     fn spawn_partial<R, F>(
         &mut self,
-        deadline: Timestamp,
+        deadline: Deadline,
         closure: fn(PartialResultInput<R>) -> F,
     ) -> PartialResultOutput<R>
     where
@@ -89,7 +89,7 @@ mod tests {
         let mut executor = Executor::new();
         let now = StdTimer.now();
 
-        let output = executor.spawn_partial::<i32, _>(now, async move |slot| {
+        let output = executor.spawn_partial::<i32, _>(now.into(), async move |slot| {
             slot.set(39);
             noop().await;
             slot.set(44);

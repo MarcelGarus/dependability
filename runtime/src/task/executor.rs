@@ -1,7 +1,8 @@
+use super::deadline::Deadline;
 use super::Task;
 use crate::priority_queue::PriorityQueue;
 use crate::task::DelayStrategy;
-use crate::{task::TaskId, time::Timestamp};
+use crate::task::TaskId;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use alloc::task::Wake;
@@ -18,7 +19,7 @@ pub enum ExecutorError {
 
 pub struct Executor<T: Timer> {
     tasks: BTreeMap<TaskId, Task>,
-    task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
+    task_queue: Arc<PriorityQueue<TaskId, Deadline>>,
     waker_cache: BTreeMap<TaskId, Waker>,
     timer: T,
 }
@@ -55,7 +56,7 @@ impl<T: Timer> Executor<T> {
 
     pub fn spawn(&mut self, task: Task) {
         let task_id = task.id;
-        let deadline = self.timer.now() + task.deadline;
+        let deadline: Deadline = task.deadline + self.timer.now();
         if self.tasks.insert(task.id, task).is_some() {
             panic!("A task with the same ID already exists.");
         }
@@ -81,7 +82,7 @@ impl<T: Timer> Executor<T> {
                 }
                 Poll::Pending => {
                     let now = self.timer.now();
-                    if task.deadline <= now {
+                    if task.deadline <= now.into() {
                         match &task.behavior {
                             DelayStrategy::ReturnError => {
                                 return Err(ExecutorError::MissedDeadline(task_id.0))
@@ -90,7 +91,9 @@ impl<T: Timer> Executor<T> {
                                 "We missed the deadline of a task with a DelayStrategy of panic."
                             ),
                             DelayStrategy::ContinueRunning => {
-                                self.task_queue.push(task_id, now - task.deadline);
+                                //self.task_queue.push(task_id, now - task.deadline);
+                                // If the deadline is missed, we don't care how long the task runs anymore.
+                                self.task_queue.push(task_id, Deadline::Infinite);
                             }
                             DelayStrategy::SilentlyAbort => {}
                             DelayStrategy::InsteadApproximate(create_other_task) => {
@@ -99,7 +102,7 @@ impl<T: Timer> Executor<T> {
                             }
                         }
                     } else {
-                        self.task_queue.push(task_id, 0);
+                        self.task_queue.push(task_id, 0.into());
                     }
                 }
             }
@@ -118,16 +121,16 @@ impl<T: Timer> Executor<T> {
 
 struct TaskWaker {
     task_id: TaskId,
-    deadline: Timestamp,
-    task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
+    deadline: Deadline,
+    task_queue: Arc<PriorityQueue<TaskId, Deadline>>,
 }
 
 impl TaskWaker {
     #[allow(clippy::new_ret_no_self)]
     fn new(
         task_id: TaskId,
-        deadline: Timestamp,
-        task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
+        deadline: Deadline,
+        task_queue: Arc<PriorityQueue<TaskId, Deadline>>,
     ) -> Waker {
         Waker::from(Arc::new(TaskWaker {
             task_id,
