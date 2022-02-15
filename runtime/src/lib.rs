@@ -22,29 +22,6 @@ macro_rules! spawn {
     }};
 }
 
-pub struct PartialSink<T>
-where
-    T: Copy,
-{
-    inner: Cell<Option<T>>,
-}
-
-impl<T: Copy> PartialSink<T> {
-    pub fn new() -> Arc<Self> {
-        Arc::new(Self {
-            inner: Cell::new(None),
-        })
-    }
-
-    pub fn set(&self, value: T) {
-        self.inner.set(Some(value));
-    }
-
-    pub fn get(&self) -> Option<T> {
-        self.inner.get()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     extern crate std;
