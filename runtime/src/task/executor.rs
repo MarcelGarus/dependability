@@ -3,6 +3,7 @@ use super::Task;
 use crate::priority_queue::PriorityQueue;
 use crate::task::DelayStrategy;
 use crate::task::TaskId;
+use crate::time::Timestamp;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use alloc::task::Wake;
@@ -19,7 +20,7 @@ pub enum ExecutorError {
 
 pub struct Executor<T: Timer> {
     tasks: BTreeMap<TaskId, Task>,
-    task_queue: Arc<PriorityQueue<TaskId, Deadline>>,
+    task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
     waker_cache: BTreeMap<TaskId, Waker>,
     timer: T,
 }
@@ -60,7 +61,8 @@ impl<T: Timer> Executor<T> {
         if self.tasks.insert(task.id, task).is_some() {
             panic!("A task with the same ID already exists.");
         }
-        self.task_queue.push(task_id, deadline);
+        self.task_queue
+            .push(task_id, deadline.to_scheduling_timestamp(&self.timer));
     }
 
     fn run_ready_tasks(&mut self) -> Result<(), ExecutorError> {
@@ -93,7 +95,10 @@ impl<T: Timer> Executor<T> {
                             DelayStrategy::ContinueRunning => {
                                 //self.task_queue.push(task_id, now - task.deadline);
                                 // If the deadline is missed, we don't care how long the task runs anymore.
-                                self.task_queue.push(task_id, Deadline::Infinite);
+                                self.task_queue.push(
+                                    task_id,
+                                    Deadline::Infinite.to_scheduling_timestamp(&self.timer),
+                                );
                             }
                             DelayStrategy::SilentlyAbort => {}
                             DelayStrategy::InsteadApproximate(create_other_task) => {
@@ -102,7 +107,8 @@ impl<T: Timer> Executor<T> {
                             }
                         }
                     } else {
-                        self.task_queue.push(task_id, 0.into());
+                        self.task_queue
+                            .push(task_id, task.deadline.to_scheduling_timestamp(&self.timer));
                     }
                 }
             }
@@ -122,7 +128,7 @@ impl<T: Timer> Executor<T> {
 struct TaskWaker {
     task_id: TaskId,
     deadline: Deadline,
-    task_queue: Arc<PriorityQueue<TaskId, Deadline>>,
+    task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
 }
 
 impl TaskWaker {
@@ -130,7 +136,7 @@ impl TaskWaker {
     fn new(
         task_id: TaskId,
         deadline: Deadline,
-        task_queue: Arc<PriorityQueue<TaskId, Deadline>>,
+        task_queue: Arc<PriorityQueue<TaskId, Timestamp>>,
     ) -> Waker {
         Waker::from(Arc::new(TaskWaker {
             task_id,
@@ -140,7 +146,7 @@ impl TaskWaker {
     }
 
     fn wake_task(&self) {
-        self.task_queue.push(self.task_id, self.deadline);
+        self.task_queue.push(self.task_id, 999);
     }
 }
 
@@ -151,5 +157,17 @@ impl Wake for TaskWaker {
 
     fn wake_by_ref(self: &Arc<Self>) {
         self.wake_task();
+    }
+}
+
+trait DeadlineExt {
+    fn to_scheduling_timestamp<T: Timer>(&self, timer: &T) -> Timestamp;
+}
+impl DeadlineExt for Deadline {
+    fn to_scheduling_timestamp<T: Timer>(&self, timer: &T) -> Timestamp {
+        match self {
+            Deadline::Infinite => (timer.now() + 9999),
+            Deadline::Finite(it) => *it,
+        }
     }
 }

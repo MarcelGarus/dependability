@@ -28,7 +28,6 @@ mod tests {
     use crate::{
         task::{executor::Executor, noop, sleep, DelayStrategy, Task},
         time::{StdTimer, Timer},
-        PartialSink,
     };
     use std::println;
 
